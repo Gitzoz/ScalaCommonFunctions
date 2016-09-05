@@ -1,5 +1,8 @@
 package de.gitzoz.commonfunctions
 
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
+
 import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL
 import akka.stream.stage.GraphStage
@@ -7,6 +10,7 @@ import akka.stream.FanOutShape2
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.Attributes
+import akka.stream.DelayOverflowStrategy
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
@@ -21,17 +25,19 @@ import akka.NotUsed
 import scala.concurrent.Future
 import akka.Done
 import akka.stream.scaladsl.MergePreferred
+import akka.stream.impl.fusing.Delay
 
 object RetryFlow {
-  def apply[In, Out <: In](businessFlow: Flow[In, Either[Out, Out], NotUsed], finallyFailedCondition: In => Boolean, onIncrementRetry: Out => Out) = {
+  def apply[In, Out <: In](businessFlow: Flow[In, Either[Out, Out], NotUsed], finallyFailedCondition: In => Boolean, onIncrementRetry: Out => Out, delayTime: FiniteDuration = 5.seconds) = {
     val graph = GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
       val merger = b.add(MergePreferred[In](1))
       val switch = b.add(new EitherSwitch[Out]())
       val retryLimiter = b.add(new RetryLimiter[Out](finallyFailedCondition, onIncrementRetry))
+      val delay = b.add(new Delay[In](delayTime, DelayOverflowStrategy.emitEarly))
 
-      merger.out ~> businessFlow ~> switch.in
-      switch.out1 ~> retryLimiter ~> merger.preferred
+      merger.out       ~>      businessFlow     ~> switch.in
+      merger.preferred <~ delay <~ retryLimiter <~ switch.out1
 
       FlowShape(merger.in(0), switch.out0)
     }
@@ -60,15 +66,11 @@ final class EitherSwitch[A] extends GraphStage[FanOutShape2[Either[A, A], A, A]]
     })
 
     setHandler(outSuccess, new OutHandler {
-      override def onPull() = {
-        pull(in)
-      }
+      override def onPull() = if(!hasBeenPulled(in)) pull(in)
     })
 
     setHandler(outFailure, new OutHandler {
-      override def onPull() = {
-        pull(in)
-      }
+      override def onPull() = if(!hasBeenPulled(in)) pull(in)
     })
   }
 }

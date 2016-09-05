@@ -1,5 +1,7 @@
 package de.gitzoz.commonfunctions
 
+import scala.concurrent.duration.DurationInt
+
 import org.scalatest.WordSpecLike
 import org.scalatest.Matchers
 import akka.testkit.TestKit
@@ -24,7 +26,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       val businessFlow = Flow[TestItem].map(item => Left(item))
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 1,
-        testitem => (testitem.copy((testitem.retries + 1))))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
@@ -33,7 +35,6 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
     }
 
     "retry a given item one time" in {
-      val failedSink = Sink.foreach[TestItem] { x => () }
       val source = Source(List(TestItem(0)))
       val businessFlow = Flow[TestItem].map(item => {
         if (item.retries < 1)
@@ -45,7 +46,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
         testitem => {
           testitem.retries > 10
         },
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
 
       source
         .via(retryFlow)
@@ -66,7 +67,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       })
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 10,
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
@@ -86,7 +87,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       })
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 10,
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
@@ -106,7 +107,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       })
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 100,
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
@@ -126,7 +127,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       })
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 100,
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
@@ -150,7 +151,7 @@ class RetryFlowSpecs extends TestKit(ActorSystem("RetryFlowSpecs")) with WordSpe
       })
       val retryFlow = RetryFlow[TestItem, TestItem](businessFlow,
         testitem => testitem.retries > 10,
-        testitem => testitem.copy((testitem.retries + 1)))
+        testitem => TestItem(testitem.retries + 1), 10.millis)
       source
         .via(retryFlow)
         .runWith(TestSink.probe[TestItem])
