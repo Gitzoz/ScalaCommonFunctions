@@ -3,12 +3,12 @@ lazy val commonFunctions = project
   .in(file("."))
 
 name := "common-functions"
-scalaVersion := "2.11.8"
+scalaVersion := Version.Scala
 
 libraryDependencies ++= Vector(
   Library.scalaTest % "test",
-  Library.akka_actor,
-  Library.akka_streams,
-  Library.akka_testkit,
-  Library.akka_streams_testkit
+  Library.akkaActor,
+  Library.akkaStreams,
+  Library.akkaTestkit,
+  Library.akkaStreamsTestkit
 )
