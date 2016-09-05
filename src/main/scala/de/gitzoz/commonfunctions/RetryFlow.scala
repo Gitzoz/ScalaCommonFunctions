@@ -28,6 +28,13 @@ import akka.stream.scaladsl.MergePreferred
 import akka.stream.impl.fusing.Delay
 
 object RetryFlow {
+/**
+   * Generates a Flow which retries items until a given condition is meet.
+   * @param businessFlow must end with an Either. Right is a success and Left is a Failure
+   * @finallyFailedCondition when should a item discarded
+   * @onIncrementRetry for example increment a counter on the item
+   * @delayTime retry an item after this delay time
+   */
   def apply[In, Out <: In](businessFlow: Flow[In, Either[Out, Out], NotUsed], finallyFailedCondition: In => Boolean, onIncrementRetry: Out => Out, delayTime: FiniteDuration = 5.seconds) = {
     val graph = GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
@@ -36,7 +43,7 @@ object RetryFlow {
       val retryLimiter = b.add(new RetryLimiter[Out](finallyFailedCondition, onIncrementRetry))
       val delay = b.add(new Delay[In](delayTime, DelayOverflowStrategy.emitEarly))
 
-      merger.out       ~>      businessFlow     ~> switch.in
+      merger.out ~> businessFlow ~> switch.in
       merger.preferred <~ delay <~ retryLimiter <~ switch.out1
 
       FlowShape(merger.in(0), switch.out0)
@@ -59,18 +66,18 @@ final class EitherSwitch[A] extends GraphStage[FanOutShape2[Either[A, A], A, A]]
       override def onPush() = {
         val item = grab(in)
         item match {
-          case Left(success)  => emit(outSuccess, success)
-          case Right(failure) => emit(outFailure, failure)
+          case Left(failure)  => emit(outFailure, failure)
+          case Right(success) => emit(outSuccess, success)
         }
       }
     })
 
     setHandler(outSuccess, new OutHandler {
-      override def onPull() = if(!hasBeenPulled(in)) pull(in)
+      override def onPull() = if (!hasBeenPulled(in)) pull(in)
     })
 
     setHandler(outFailure, new OutHandler {
-      override def onPull() = if(!hasBeenPulled(in)) pull(in)
+      override def onPull() = if (!hasBeenPulled(in)) pull(in)
     })
   }
 }
