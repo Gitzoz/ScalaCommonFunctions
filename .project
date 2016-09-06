@@ -1,5 +1,5 @@
 <projectDescription>
-  <name>common-functions</name>
+  <name>ScalaCommonFunctions</name>
   <buildSpec>
     <buildCommand>
       <name>org.scala-ide.sdt.core.scalabuilder</name>

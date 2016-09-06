@@ -1,14 +1,14 @@
-lazy val commonFunctions = project
-  .copy(id = "common-functions")
+lazy val ScalaCommonFunctions = project
   .in(file("."))
-
-name := "common-functions"
-scalaVersion := Version.Scala
+  .enablePlugins(AutomateHeaderPlugin, GitVersioning)
 
 libraryDependencies ++= Vector(
   Library.scalaTest % "test",
   Library.akkaActor,
   Library.akkaStreams,
-  Library.akkaTestkit,
-  Library.akkaStreamsTestkit
+  Library.akkaTestkit % "test",
+  Library.akkaStreamsTestkit % "test"
 )
+
+initialCommands := """|import de.gitzoz.scalacommonfunctions._
+                      |""".stripMargin
