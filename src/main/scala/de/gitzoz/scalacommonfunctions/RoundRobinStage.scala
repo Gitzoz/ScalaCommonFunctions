@@ -38,7 +38,7 @@ object RoundRobinStage {
 final class RoundRobinStage[T](nrOfOutlets: Int)
     extends GraphStage[UniformFanOutShape[T, T]] {
   val in      = Inlet[T]("in")
-  val outlets = (0 to (nrOfOutlets - 1)).map(idx => Outlet[T](s"idx"))
+  val outlets = (0 to (nrOfOutlets - 1)).map(idx => Outlet[T](s"$idx"))
   override val shape =
     new UniformFanOutShape(outlets.size, FanOutShape.Ports(in, outlets.toList))
 
