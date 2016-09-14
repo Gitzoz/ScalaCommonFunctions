@@ -31,10 +31,10 @@ object RoundRobinStage {
 }
 
 /**
- * A very simple round robin implementation in a Akka Stream Stage.
- * It will send one item to one outlet. 
- * @param nrOfOutlets Number of outlets this stage have.
- */
+  * A very simple round robin implementation in a Akka Stream Stage.
+  * It will send one item to one outlet.
+  * @param nrOfOutlets Number of outlets this stage have.
+  */
 final class RoundRobinStage[T](nrOfOutlets: Int)
     extends GraphStage[UniformFanOutShape[T, T]] {
   val in      = Inlet[T]("in")
